@@ -8,7 +8,6 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
 // In-memory store for tracking generated URLs (for demonstration)
 const urlStore = new Map();
@@ -188,6 +187,278 @@ app.get('/api/stats', (req, res) => {
     serverUptime: process.uptime(),
     timestamp: new Date().toISOString()
   });
+});
+
+// Root route - Serve HTML interface
+app.get('/', (req, res) => {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerOfAum - Signed URL Generator Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .url-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            word-break: break-all;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        
+        .metadata {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .examples {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧘‍♀️ PowerOfAum</h1>
+            <p>Signed Media URL Generator - Module G Test Interface</p>
+        </div>
+        
+        <div class="content">
+            <div class="examples">
+                <h3>📝 Example Usage</h3>
+                <div><strong>File Path:</strong> /videos/intro.mp4</div>
+                <div><strong>User ID:</strong> USER_001</div>
+                <div><strong>Supported formats:</strong> mp4, mp3, wav, avi, mov, pdf, jpg, jpeg, png</div>
+            </div>
+            
+            <form id="urlForm">
+                <div class="form-group">
+                    <label for="filePath">File Path *</label>
+                    <input type="text" id="filePath" name="filePath" placeholder="/videos/intro.mp4" value="/videos/intro.mp4" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userId">User ID *</label>
+                    <input type="text" id="userId" name="userId" placeholder="USER_001" value="USER_001" required>
+                </div>
+                
+                <button type="submit" class="btn">🔗 Generate Signed URL</button>
+                <button type="button" class="btn" onclick="clearResults()">🗑️ Clear</button>
+            </form>
+            
+            <div class="loading" id="loading">⏳ Generating signed URL...</div>
+            <div id="result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('urlForm');
+        const resultDiv = document.getElementById('result');
+        const loadingDiv = document.getElementById('loading');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const filePath = document.getElementById('filePath').value.trim();
+            const userId = document.getElementById('userId').value.trim();
+            
+            if (!filePath || !userId) {
+                showError('Please fill in all required fields');
+                return;
+            }
+            
+            showLoading(true);
+            hideResult();
+            
+            try {
+                const response = await fetch(\`/api/generate-signed-url?filePath=\${encodeURIComponent(filePath)}&userId=\${encodeURIComponent(userId)}\`);
+                const data = await response.json();
+                
+                showLoading(false);
+                
+                if (data.success) {
+                    showSuccess(data);
+                } else {
+                    showError(data.error || 'Unknown error occurred');
+                }
+            } catch (error) {
+                showLoading(false);
+                showError('Network error: ' + error.message);
+            }
+        });
+
+        function showLoading(show) {
+            loadingDiv.style.display = show ? 'block' : 'none';
+        }
+
+        function hideResult() {
+            resultDiv.style.display = 'none';
+        }
+
+        function showSuccess(data) {
+            resultDiv.className = 'result success';
+            resultDiv.style.display = 'block';
+            
+            const metadata = data.metadata || {};
+            
+            resultDiv.innerHTML = \`
+                <h3>✅ Signed URL Generated Successfully!</h3>
+                
+                <div class="url-display">
+                    <strong>Signed URL:</strong><br>
+                    <a href="\${data.signedUrl}" target="_blank">\${data.signedUrl}</a>
+                </div>
+                
+                <div class="metadata">
+                    <strong>📊 Metadata:</strong><br>
+                    <strong>File Path:</strong> \${metadata.filePath || 'N/A'}<br>
+                    <strong>User ID:</strong> \${metadata.userId || 'N/A'}<br>
+                    <strong>Expires At:</strong> \${new Date(metadata.expiresAt * 1000).toLocaleString() || 'N/A'}<br>
+                    <strong>Valid For:</strong> \${metadata.expiresIn || 'N/A'}<br>
+                    <strong>Generated At:</strong> \${metadata.generatedAt ? new Date(metadata.generatedAt).toLocaleString() : 'N/A'}
+                </div>
+                
+                <p><strong>⏰ Note:</strong> This URL will expire in 2 minutes for security purposes.</p>
+            \`;
+        }
+
+        function showError(errorMessage) {
+            resultDiv.className = 'result error';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = \`
+                <h3>❌ Error</h3>
+                <p>\${errorMessage}</p>
+            \`;
+        }
+
+        function clearResults() {
+            hideResult();
+            document.getElementById('filePath').value = '/videos/intro.mp4';
+            document.getElementById('userId').value = 'USER_001';
+        }
+    </script>
+</body>
+</html>`;
+  
+  res.send(html);
 });
 
 // Root route - API information
