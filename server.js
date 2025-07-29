@@ -190,6 +190,36 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
+// Root route - API information
+app.get('/info', (req, res) => {
+  res.json({
+    success: true,
+    service: 'PowerOfAum Signed URL Generator',
+    module: 'Module G',
+    version: '1.0.0',
+    author: 'Akshay Singh',
+    description: 'A secure API for generating time-limited signed URLs for media files',
+    endpoints: {
+      'Generate Signed URL': 'GET /api/generate-signed-url?filePath=<path>&userId=<id>',
+      'Validate Token': 'GET /api/validate-token?token=<token>',
+      'API Stats': 'GET /api/stats',
+      'Health Check': 'GET /health',
+      'API Info': 'GET /info',
+      'Test Interface': 'GET / (Web Interface)'
+    },
+    example: {
+      url: '/api/generate-signed-url?filePath=/videos/intro.mp4&userId=USER_001',
+      description: 'Generate a signed URL for a video file'
+    },
+    documentation: {
+      'Test Interface': '/',
+      'Postman Collection': 'Available in repository',
+      'GitHub': 'https://github.com/AkshaySingh2005/candidate-001-powerofaum-module-signedurl'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
@@ -199,8 +229,11 @@ app.use('*', (req, res) => {
       'GET /api/generate-signed-url?filePath=<path>&userId=<id>',
       'GET /api/validate-token?token=<token>',
       'GET /api/stats',
-      'GET /health'
-    ]
+      'GET /health',
+      'GET /info',
+      'GET / (Web Interface)'
+    ],
+    message: 'Visit / for the web interface or /info for API documentation'
   });
 });
 
