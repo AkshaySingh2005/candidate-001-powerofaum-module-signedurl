@@ -1,0 +1,216 @@
+{
+	"info": {
+		"_postman_id": "powerofaum-signed-url-generator",
+		"name": "PowerOfAum - Signed URL Generator",
+		"description": "API collection for testing the PowerOfAum Signed Media URL Generator (Module G)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/health",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"health"
+					]
+				},
+				"description": "Check if the service is running properly"
+			}
+		},
+		{
+			"name": "Generate Signed URL - Success",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/generate-signed-url?filePath=/videos/intro.mp4&userId=USER_001",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"generate-signed-url"
+					],
+					"query": [
+						{
+							"key": "filePath",
+							"value": "/videos/intro.mp4",
+							"description": "Path to the media file"
+						},
+						{
+							"key": "userId",
+							"value": "USER_001",
+							"description": "User identifier"
+						}
+					]
+				},
+				"description": "Generate a signed URL for a video file"
+			}
+		},
+		{
+			"name": "Generate Signed URL - Audio File",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/generate-signed-url?filePath=/audio/meditation.mp3&userId=USER_002",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"generate-signed-url"
+					],
+					"query": [
+						{
+							"key": "filePath",
+							"value": "/audio/meditation.mp3"
+						},
+						{
+							"key": "userId",
+							"value": "USER_002"
+						}
+					]
+				},
+				"description": "Generate a signed URL for an audio file"
+			}
+		},
+		{
+			"name": "Generate Signed URL - Missing FilePath",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/generate-signed-url?userId=USER_001",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"generate-signed-url"
+					],
+					"query": [
+						{
+							"key": "userId",
+							"value": "USER_001"
+						}
+					]
+				},
+				"description": "Test error handling when filePath is missing"
+			}
+		},
+		{
+			"name": "Generate Signed URL - Missing UserId",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/generate-signed-url?filePath=/videos/intro.mp4",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"generate-signed-url"
+					],
+					"query": [
+						{
+							"key": "filePath",
+							"value": "/videos/intro.mp4"
+						}
+					]
+				},
+				"description": "Test error handling when userId is missing"
+			}
+		},
+		{
+			"name": "Generate Signed URL - Invalid FilePath",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/generate-signed-url?filePath=invalid-path&userId=USER_001",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"generate-signed-url"
+					],
+					"query": [
+						{
+							"key": "filePath",
+							"value": "invalid-path"
+						},
+						{
+							"key": "userId",
+							"value": "USER_001"
+						}
+					]
+				},
+				"description": "Test error handling for invalid file path format"
+			}
+		},
+		{
+			"name": "Validate Token",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/validate-token?token={{token}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"validate-token"
+					],
+					"query": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"description": "Token to validate (set this from a previous generate-signed-url response)"
+						}
+					]
+				},
+				"description": "Validate if a token is still valid"
+			}
+		},
+		{
+			"name": "API Stats",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/stats",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"stats"
+					]
+				},
+				"description": "Get API usage statistics"
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"description": "Base URL for the API (change to your deployed URL)"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"description": "Token from generate-signed-url response (copy manually)"
+		}
+	]
+}
