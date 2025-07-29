@@ -79,8 +79,8 @@ app.get('/api/generate-signed-url', (req, res) => {
     // Extract filename from path
     const filename = filePath.split('/').pop();
     
-    // Create signed URL
-    const signedUrl = `https://signed.powerofaum.com${filePath}?token=${token}&expires=${expires}&userId=${userId}`;
+    // Create signed URL (using our own domain for demonstration)
+    const signedUrl = `https://candidate-001-powerofaum-module-sig-five.vercel.app/media${filePath}?token=${token}&expires=${expires}&userId=${userId}`;
     
     // Store in memory for potential validation (optional)
     urlStore.set(token, {
@@ -491,6 +491,112 @@ app.get('/info', (req, res) => {
   });
 });
 
+// Media endpoint - Simulates serving the actual media file
+app.get('/media/*', (req, res) => {
+  const { token, expires, userId } = req.query;
+  const filePath = req.path.replace('/media', '');
+  
+  try {
+    // Validate required parameters
+    if (!token || !expires || !userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid signed URL: Missing required parameters',
+        required: ['token', 'expires', 'userId']
+      });
+    }
+
+    // Check if token exists in our store
+    const tokenData = urlStore.get(token);
+    if (!tokenData) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid or expired token',
+        message: 'This signed URL is no longer valid'
+      });
+    }
+
+    // Check expiry
+    const currentTime = Math.floor(Date.now() / 1000);
+    const expiryTime = parseInt(expires);
+    
+    if (currentTime > expiryTime) {
+      urlStore.delete(token); // Clean up expired token
+      return res.status(410).json({
+        success: false,
+        error: 'Signed URL has expired',
+        message: 'This URL was only valid for 2 minutes and has now expired',
+        expiredAt: new Date(expiryTime * 1000).toISOString(),
+        currentTime: new Date().toISOString()
+      });
+    }
+
+    // Validate file path and user match
+    if (tokenData.filePath !== filePath || tokenData.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied',
+        message: 'Token does not match the requested resource'
+      });
+    }
+
+    // Success! In a real system, this would serve the actual file
+    // For demo purposes, we return a success message with file info
+    const fileExtension = filePath.split('.').pop().toLowerCase();
+    const mediaType = getMediaType(fileExtension);
+    const remainingTime = expiryTime - currentTime;
+
+    res.json({
+      success: true,
+      message: '🎉 Signed URL Access Granted!',
+      access: {
+        filePath: filePath,
+        userId: userId,
+        mediaType: mediaType,
+        fileSize: getRandomFileSize(),
+        accessedAt: new Date().toISOString(),
+        remainingTime: `${remainingTime} seconds`,
+        expiresAt: new Date(expiryTime * 1000).toISOString()
+      },
+      simulation: {
+        note: 'In a real system, this would stream/download the actual media file',
+        wouldServe: `${mediaType} file: ${filePath}`,
+        example: mediaType === 'video' ? 'Video would start playing' : 
+                mediaType === 'audio' ? 'Audio would start streaming' :
+                mediaType === 'image' ? 'Image would be displayed' :
+                'File would be downloaded'
+      }
+    });
+
+  } catch (error) {
+    console.error('Error accessing media:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while accessing media'
+    });
+  }
+});
+
+// Helper function to determine media type
+function getMediaType(extension) {
+  const videoTypes = ['mp4', 'avi', 'mov', 'webm'];
+  const audioTypes = ['mp3', 'wav', 'ogg', 'aac'];
+  const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  const docTypes = ['pdf', 'doc', 'docx'];
+
+  if (videoTypes.includes(extension)) return 'video';
+  if (audioTypes.includes(extension)) return 'audio'; 
+  if (imageTypes.includes(extension)) return 'image';
+  if (docTypes.includes(extension)) return 'document';
+  return 'file';
+}
+
+// Helper function to simulate file size
+function getRandomFileSize() {
+  const sizes = ['2.3 MB', '15.7 MB', '45.2 MB', '128.9 MB', '1.2 GB'];
+  return sizes[Math.floor(Math.random() * sizes.length)];
+}
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
@@ -502,6 +608,7 @@ app.use('*', (req, res) => {
       'GET /api/stats',
       'GET /health',
       'GET /info',
+      'GET /media/* (Signed URLs only)',
       'GET / (Web Interface)'
     ],
     message: 'Visit / for the web interface or /info for API documentation'
